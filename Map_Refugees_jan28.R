@@ -1,5 +1,5 @@
 # Refugee Data Visualization
-# 
+library(ggplot2)
 # https://data.unhcr.org/dataviz/ THE GOAL IS TO REPLICATE THIS IN SHINY
 
 # METADAT on dataset
@@ -16,16 +16,40 @@ files.all <- list.files(path="All_Data/") #assigns name to file names in the Can
 length(files.all) #checks how many objects there are in the /Canada folder
 files.all
 
-ref.d <- read.csv(paste0("Canada/",files.all), #insert filepath and name into 1st argument
+ref.d <- read.csv(paste0("All_Data/",files.all), #insert filepath and name into 1st argument
 	header=T, #select the headers in 3rd row
 	skip=2, #skips the first rows (metadata in .csv file)
-	na.string=c("","-","*")) #convert all blanks, "i","*" cells into missing type NA
+	#na.string=c("","-","*") #convert all blanks, "i","*" cells into missing type NA
+	)
+
+names(ref.d) <- c("Year", "Country", "Country_Origin", "Refugees", "Asylum_Seekers", "Returned_Refugees", "IDPs", "Returned_IDPs", "Stateless_People", "Others_of_Concern","Total") 
+
+head(ref.d) #some of the values are NA but other blank ones are not?
+
+summary(ref.d) #some have values of numbers, but also there are "*" - redacted information #http://popstats.unhcr.org/en/time_series
+which(ref.d$Returned.refugees=="*")
+which(ref.d$Returned.refugees=="")
+which(ref.d$Returned.refugees==0)
+
+ref0<-sub("^$",0,ref.d$Returned.refugees)
+
+ref0<-ifelse(ref.d$Returned.refugees=="",0,ref.d$Returned.refugees)
+
+
+sapply(1:length(ref.d),function(y,x) ifelse(ref.d[,x]=="",0,ref.d[,x]), y=ref.d)
+ifelse(ref.d[,k]=="",0,ref.d[,k])
+
+ref0<-apply(ref.d,2,function(x) sub("^$",0,x))
+str(ref0)
+
+if(ref.d[,i])
+sub("^$","A",ref.d$Returned.refugees)
 
 dim(ref.d) #dimensions of dataset
 names(ref.d) #I don't like names, so we'll specify them
 
 names(ref.d) <- c("Year", "Country", "Country_Origin", "Refugees", "Asylum_Seekers", "Returned_Refugees", "IDPs", "Returned_IDPs", "Stateless_People", "Others_of_Concern","Total") #abbreviated headers for columns
-
+head(ref.d$Asylum_Seekers)
 names(ref.d) #check the names again
 
 ##########################
@@ -54,44 +78,36 @@ str(ref.d) #structure of the columns
 
 # Renaming the names in of certain countries for brevity
 # http://www.cookbook-r.com/Manipulating_data/Renaming_levels_of_a_factor/
-library(plyr) #load the plyr package
-levels(ref.d$Country)<-revalue(ref.d$Country, 
-	c("Bolivia (Plurinational State of)"="Bolivia",
-	"China, Hong Kong SAR"="Hong Kong",
-	"China, Macao SAR"="Macao",
-	"Iran (Islamic Rep. of)"="Iran",
-	"Micronesia (Federated States of)"="Micronesia",
-	"Serbia and Kosovo (S/RES/1244 (1999))"="Serbia & Kosovo",
-	"Venezuela (Bolivarian Republic of)"="Venezuela",
-	"Various/Unknown"="Unknown")
-	)
+# library(plyr) #load the plyr package
+# levels(ref.d$Country)<-revalue(ref.d$Country, 
+	# c("Bolivia (Plurinational State of)"="Bolivia",
+	# "China, Hong Kong SAR"="Hong Kong",
+	# "China, Macao SAR"="Macao",
+	# "Iran (Islamic Rep. of)"="Iran",
+	# "Micronesia (Federated States of)"="Micronesia",
+	# "Serbia and Kosovo (S/RES/1244 (1999))"="Serbia & Kosovo",
+	# "Venezuela (Bolivarian Republic of)"="Venezuela",
+	# "Various/Unknown"="Unknown")
+	# )
 
-levels(ref.d$Country_Origin)<-revalue(ref.d$Country_Origin,
-		c("Bolivia (Plurinational State of)"="Bolivia",
-	"China, Hong Kong SAR"="Hong Kong",
-	"China, Macao SAR"="Macao",
-	"Iran (Islamic Rep. of)"="Iran",
-	"Micronesia (Federated States of)"="Micronesia",
-	"Serbia and Kosovo (S/RES/1244 (1999))"="Serbia & Kosovo",
-	"Venezuela (Bolivarian Republic of)"="Venezuela",
-	"Various/Unknown"="Unknown")
-	)
-levels(ref.d$Country)
-levels(ref.d$Country_Origin)
-str(ref.d)
-
-## ^ above replaces what was done before but erorrs occur when I convert from factor to string type
-# ref.d$Country_Origin[ref.d$Country_Origin=="Various/Unknown"] <- "Unknown" #change the "Various/Unknown" to a new string label "UNKNOWN" in the country of origin column
-# ref.d$Country[ref.d$Country=="Various/Unknown"] <- "Unknown" #do the same for the countries
+# levels(ref.d$Country_Origin)<-revalue(ref.d$Country_Origin,
+		# c("Bolivia (Plurinational State of)"="Bolivia",
+	# "China, Hong Kong SAR"="Hong Kong",
+	# "China, Macao SAR"="Macao",
+	# "Iran (Islamic Rep. of)"="Iran",
+	# "Micronesia (Federated States of)"="Micronesia",
+	# "Serbia and Kosovo (S/RES/1244 (1999))"="Serbia & Kosovo",
+	# "Venezuela (Bolivarian Republic of)"="Venezuela",
+	# "Various/Unknown"="Unknown")
+	# )
+# levels(ref.d$Country)
+# levels(ref.d$Country_Origin)
+# str(ref.d)
 
 # two factors nad the remainder are integers
-summary(ref.d$Year);class(ref.d$Year);range(ref.d$Year)
-ref.d$Country <- as.character(ref.d$Country) #convert from factor to string
-ref.d$Country_Origin <-as.character(ref.d$Country_Origin) #convert from factor to string
-
 for(i in 2:length(names(ref.d))){ # "2"-ignores the first column (we want to keep Year as an integer)
 	if (class(ref.d[,i])=="factor"){
-		ref.d[,i] <- as.character(ref.d[,i])	 #converts all columns with factor type to string
+		ref.d[,i] <- as.character(ref.d[,i]) #converts all columns with factor type to string
 	}
 	if (class(ref.d[,i])=="integer"){
 		ref.d[,i] <- as.numeric(ref.d[,i]) #converts all columns with integer to numeric
@@ -111,8 +127,6 @@ old.countries <- c("Bolivia (Plurinational State of)",
 # replacement names
 new.countries <- c("Bolivia","Hong Kong","Macao","Iran","Micronesia","Serbia & Kosovo","Venezuela","Unknown")
 
-ref.d$Country_Origin[ref.d$Country_Origin==oldcountries[k]<-new.countries[k]
-
 for (k in 1:length(old.countries)){
 	ref.d$Country_Origin[ref.d$Country_Origin==old.countries[k]]<-new.countries[k]
 	ref.d$Country[ref.d$Country==old.countries[k]]<-new.countries[k]
@@ -120,11 +134,6 @@ for (k in 1:length(old.countries)){
 
 table(ref.d$Country)
 table(ref.d$Country_Origin)
-
-
-ref.d$Country_Origin[ref.d$Country_Origin=="Various/Unknown"] <- "Unknown" #change the "Various/Unknown" to a new string label "UNKNOWN" in the country of origin column
-ref.d$Country[ref.d$Country=="Various/Unknown"] <- "Unknown" #do the same for the countries
-
 
 # > table(ref.d$Country)
 
@@ -158,7 +167,6 @@ or.list
 # Creating a list of the countries in Country_Origin
 or.clist<-sort(unique(ref.d$Country_Origin)) #alphabetical
 or.clist
-
 
 # We want to if there are any differences between these two vectors of country names
 # http://stackoverflow.com/questions/9162134/comparing-character-vectors-in-r-to-find-unique-and-or-missing-values
@@ -207,11 +215,36 @@ wordcloud(or.countries,
 	colors=pal2)
 
 ?aggregate
+sum(ref.d[which(ref.d$Year==1951),4])
+
 # Sum the Totals by Year, Country, Country of Origin
 names(ref.d) #http://stackoverflow.com/questions/15933968/r-programming-sum-elements-of-rows-with-common-values?rq=1
-year.tot<-aggregate(cbind(Total)~Year,data=ref.d,FUN=sum)
-or.country.tot<-aggregate(cbind(Total)~Country_Origin,data=ref.d,FUN=sum)
+# YEAR
+year.tot <- aggregate(cbind(Total)~Year,data=ref.d,FUN=sum)
+year.tot
 
+# COUNTRY
+count.tot <- aggregate(cbind(Total)~Country,data=ref.d,FUN=sum)
+count.tot
+
+# COUNTRY OF ORIGIN
+or.count.tot <- aggregate(cbind(Total)~Country_Origin,data=ref.d,FUN=sum)
+or.count.tot
+
+aggregate(cbind(Country)~Year+Refugees,data=ref.d,FUN=sum) # sums of "Refugee" by country and year
+names(ref.d)
+summary(year.tot)
+
+# REFUGEE vs. IDP: the difference between them is that “a refugee has crossed an international border and has sought refuge in a country other than his own, whereas an IDP is trying to find safety and refuge within his country,
+
+##############
+# WORDCLOUDS #
+##############
+
+library(extrafont)
+loadfonts()
+
+# Set the Palette
 pal3 <- c("#274c56", #http://tools.medialab.sciences-po.fr/iwanthue/
 "#664c47",
 "#4e5c48",
@@ -228,6 +261,75 @@ pal3 <- c("#274c56", #http://tools.medialab.sciences-po.fr/iwanthue/
 "#aa95a2",
 "#8ba7b4")
 
+# YEAR
+plot(year.tot)
+wordcloud(year.tot[,1], #list of words
+	year.tot[,2], #frequencies for words
+	scale=c(3,.5), #scale of size range 
+	min.freq=100, #minimum frequency
+	family="Garamond", font=2, #text edit (The font "face" (1=plain, 2=bold, 3=italic, 4=bold-italic))
+	# https://www.stat.auckland.ac.nz/~paul/R/fonts.html
+	random.order=F, #F-plotted in decreasing frequency 
+	colors=rev(pal3)) #colours from least to most frequent
+
+# COUNTRY OF ORIGIN
+wordcloud(or.count.tot[,1], #list of words
+	or.count.tot[,2], #frequencies for words
+	scale=c(3,.5), #scale of size range 
+	min.freq=100, #minimum frequency
+	max.words=100, #maximum number of words show (others dropped)
+	family="Garamond", font=2, #text edit (The font "face" (1=plain, 2=bold, 3=italic, 4=bold-italic))
+	# https://www.stat.auckland.ac.nz/~paul/R/fonts.html
+	random.order=F, #F-plotted in decreasing frequency 
+	colors=rev(pal3)) #colours from least to most frequent
+
+# question, Afghanistan looks to be the biggest
+sum(ref.d[which(ref.d$Country=="Afghanistan"),11],na.rm=T)
+
+# COUNTRY
+wordcloud(count.tot[,1], #list of words
+	count.tot[,2], #frequencies for words
+	scale=c(3,.5), #scale of size range 
+	min.freq=100, #minimum frequency
+	max.words=100, #maximum number of words show (others dropped)
+	family="Garamond", font=2, #text edit (The font "face" (1=plain, 2=bold, 3=italic, 4=bold-italic))
+	# https://www.stat.auckland.ac.nz/~paul/R/fonts.html
+	random.order=F, #F-plotted in decreasing frequency 
+	colors=rev(pal3)) #colours from least to most frequent
+
+# PLOTS
+# http://stackoverflow.com/questions/21236229/stacked-bar-chart
+
+# 1st prepare data in long form to use in ggplot2 http://stackoverflow.com/questions/21236229/stacked-bar-chart
+install.packages("reshape2")
+library(reshape2)
+
+names(ref.d)
+# https://www.r-bloggers.com/reshape-and-aggregate-data-with-the-r-package-reshape2/
+lref.d<-melt(ref.d, id.vars=c("Refugees","Asylum_Seekers","Returned_Refugees","IDPs","Returned_IDPs","Stateless_People","Others_of_Concern"))
+names(ref.d)
+lref.d<-melt(ref.d,id.vars=c("Country","Year"))
+l.count<-melt(ref.d[,-c(3,11)],id.vars=c("Country","Year"))
+l.or.count<-melt(ref.d[,-c(2,11)],id.vars=c("Country_Origin","Year"))
+
+head(ref.d)
+head(lref.d)
+tail(lref.d)
+
+lref.d[1:100,1:4]
+
+table(lref.d$variable)
+head(l.count)
+
+# Making the Stacked Bar Plot
+help.search("geom_", package = "ggplot2")
+
+ggplot(l.or.count,aes(Year,value)) + geom_bar(aes(fill=variable),stat="identity") # stacked barplot of refugee types by year
+ggplot(ref.d,aes(Year,Total)) + geom_bar(aes(fill=Country),stat="identity") #not helpful, too many layers
+
+?melt
+?reshape2	
+
 # Install more Fonts
 install.packages("extrafont")
 library(extrafont)
@@ -239,3 +341,6 @@ wordcloud(or.country.tot[,1],
 	family="Garamond", font=2,
 	random.order=F,
 	colors=rev(pal3))
+
+# USE API TO DOWNLOAD DATA
+# http://data.unhcr.org/wiki/index.php/Information_Sharing_Portal.html#Codes_management
